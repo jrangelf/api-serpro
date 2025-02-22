@@ -1,0 +1,43 @@
+services:
+
+  serpro:
+    container_name: api-serpro
+    build:
+      context: ./api
+      dockerfile: ./dockerfile.serpro    
+    ports:
+      - '8002:8002'
+    networks:
+      - siscalc
+    #depends_on:
+    #  - pgsql3
+    volumes:
+      - ./api:/api          
+    env_file:
+      - ./env/serpro.env   
+
+  pgsql3:
+    container_name: api-serpro-db
+    build:
+      context: ./postgres3
+      dockerfile: dockerfile.postgres3
+    ports:
+      - '5435:5432'
+    #depends_on:
+    #  - pgsql2
+    networks:
+      - siscalc
+    restart: always  
+    volumes:
+      - ./postgres3/db:/var/lib/postgresql/data      
+    env_file:
+      - ./env/postgres3.env
+  
+networks:
+  #indice:
+  siscalc:
+    external: true
+
+#volumes:
+#  static_data:    
+
