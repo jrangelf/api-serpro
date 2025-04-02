@@ -20,16 +20,26 @@ def get_db():
         db.close()
 
 
+# @router.get("/pesquisarcpf/{cpf}")
+# async def pesquisar_cpf(cpf):
+#     iu, nome = SerproSiape.identificao_unica(cpf)    
+#     return {'cpf':cpf, 'nome':nome, 'iu': iu}
+
 @router.get("/pesquisarcpf/{cpf}")
 async def pesquisar_cpf(cpf):
-    iu, nome = SerproSiape.identificao_unica(cpf)    
-    return {'cpf':cpf, 'nome':nome, 'iu': iu}
+    iu, nome = await SerproSiape.identificao_unica(cpf)
+    return {'cpf': cpf, 'nome': nome, 'iu': iu}
+
+# @router.get("/datadeobito/{cpf}")
+# async def pesquisar_data_obito(cpf):
+#     cpf, nome, data_de_obito = SerproSiape.consulta_obito(cpf)    
+#     return {'cpf':cpf, 'nome':nome, 'data_de_obito': data_de_obito}
 
 
 @router.get("/datadeobito/{cpf}")
 async def pesquisar_data_obito(cpf):
-    cpf, nome, data_de_obito = SerproSiape.consulta_obito(cpf)    
-    return {'cpf':cpf, 'nome':nome, 'data_de_obito': data_de_obito}
+    cpf, nome, data_de_obito = await SerproSiape.consulta_obito(cpf)
+    return {'cpf': cpf, 'nome': nome, 'data_de_obito': data_de_obito}
 
 
 @router.get("/vinculos/{cpf}")
@@ -37,7 +47,7 @@ async def pesquisar_orgaos_pelo_cpf(
     cpf, 
     anoinicial: int = Query(..., title="Ano inicial", gt=1980, lt=2100),
     anofinal: int = Query(..., title="Ano inicial", gt=1980, lt=2100)):    
-    ficha = SerproSiape.extrair_ficha_financeira(cpf, anoinicial, anofinal)
+    ficha = await SerproSiape.extrair_ficha_financeira(cpf, anoinicial, anofinal)
     orgaos = obter_orgaos_por_periodo(ficha)
     return orgaos
 
@@ -47,17 +57,15 @@ async def pesquisar_ficha_financeira(
     cpf: str,
     anoinicial: int = Query(..., title="Ano inicial", gt=1980, lt=2100),
     anofinal: int = Query(..., title="Ano inicial", gt=1980, lt=2100)):       
-    ficha = SerproSiape.extrair_ficha_financeira(cpf, anoinicial, anofinal)
+    ficha = await SerproSiape.extrair_ficha_financeira(cpf, anoinicial, anofinal)
     return ficha
-
-#@router.get("/fichafinanceira/{cpf}")
 
 
 @router.get("/rubricas/{cpf}")
 async def extrair_todas_rubricas_ficha_financeira(cpf: str,
                             anoinicial: int,
                             anofinal: int):    
-    ficha = SerproSiape.extrair_ficha_financeira(cpf, anoinicial, anofinal)
+    ficha = await SerproSiape.extrair_ficha_financeira(cpf, anoinicial, anofinal)
     if ficha:
         rubrica = ExtracaoRubricas(ficha)
         dicionario = rubrica.percorrer_ficha_financeira()
@@ -69,7 +77,7 @@ async def extrair_todas_rubricas_ficha_financeira_por_orgao(cpf: str,
                             anoinicial: int,
                             anofinal: int,
                             orgao: int):    
-    ficha = SerproSiape.extrair_ficha_financeira(cpf, anoinicial, anofinal)    
+    ficha = await SerproSiape.extrair_ficha_financeira(cpf, anoinicial, anofinal)    
     if ficha:
         rubrica = ExtracaoRubricas(ficha)
         dicionario = rubrica.separar_rubricas_por_orgao(orgao)        
@@ -77,13 +85,44 @@ async def extrair_todas_rubricas_ficha_financeira_por_orgao(cpf: str,
     return ''
 
 
+@router.get("/ocorreciasservidor/{cpf}")
+async def obter_ocorrencias_servidor(cpf: str, anofinal: int, mesfinal: int):
+    ficha = await SerproSiape.buscar_ocorrencias_servidor(cpf, anofinal, mesfinal)
+    return ficha
+
+
+@router.get("/pesquisarbeneficiario/{nome}")
+async def pesquisar_beneficiario_pelo_nome(nome: str):
+    nome = await SerproSiape.pesquisar_beneficiario_pelo_nome(nome)
+    if nome:
+        return nome    
+    return ''
+
+
+@router.get("/consultarinstituidores/{cpf}")
+async def pesquisar_instituidores_pelo_cpf_beneficiario(cpf: str):
+    nome = await SerproSiape.consultar_beneficiario_instituidores(cpf)
+    if nome:
+        return nome    
+    return ''
+
+@router.get("/consultarbeneficioario/{cpf}")
+async def consultar_beneficioario_pelo_cpf(cpf: str):
+    nome = await SerproSiape.consultar_beneficiario(cpf)
+    if nome:
+        return nome    
+    return ''
+
+# -------------------------------------------------------------
+# a partir daqui a API busca os dados no próprio banco postgres
+# -------------------------------------------------------------
+
 @router.get("/descricaorubrica")
 async def listar_todas_descricoes_rubricas(db: Session = Depends(get_db)):
     data_tabela = db.query(Rubricas).all()
     if data_tabela is not None:
         return data_tabela
     raise HTTPException(status_code=404, detail='N/I')
-
 
 
 @router.get("/descricaorubrica/")
@@ -94,20 +133,12 @@ async def obter_descricao_rubrica_pelo_codigo(codigo,
         return data_tabela
     else:
         return {'descricao':'', 'codigo':codigo}
-    #raise HTTPException(status_code=404)
 
-
-@router.get("/ocorreciasservidor/{cpf}")
-async def obter_ocorrencias_servidor(cpf: str, anofinal: int, mesfinal: int):
-    ficha = SerproSiape.buscar_ocorrencias_servidor(cpf, anofinal, mesfinal)
-    return ficha
 
 @router.get("/itens/")
 async def get_itens(rubricas: List[int] = Query(...)):    
     return rubricas
 
-
-# a partir daqui a API busca os dados no banco postgres
 
 @router.get("/nomeorgao/")
 async def obter_nome_orgao_pelo_codigo(codigo,
@@ -128,23 +159,3 @@ async def obter_nome_cargo(codcargo,
     if data_tabela is not None:
         return data_tabela
     raise HTTPException(status_code=404, detail='sem dados')
-
-#--------------------------------------------------------------------------------------------
-
-@router.get("/pesquisarbeneficiario/{nome}")
-async def pesquisar_beneficiario_pelo_nome(nome: str):
-    nome = SerproSiape.pesquisar_beneficiario_pelo_nome(nome)
-    if nome:
-        return nome    
-    return ''
-
-@router.get("/consultarinstituidores/{cpf}")
-async def pesquisar_instituidores_pelo_cpf_beneficiario(cpf: str):
-    nome = SerproSiape.consultar_beneficiario_instituidores(cpf)
-    if nome:
-        return nome    
-    return ''
-
-# @router.get("/items/")
-# async def extracao_rubricas(items: List[str] = Query(...)):    
-#     return {"items": items}

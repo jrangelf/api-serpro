@@ -18,9 +18,6 @@ class SerproUtils:
 		dados_limpos = [item["__values__"] for item in dados]
 		return dados_limpos
 
-
-
-
 def formatar_ano_mes(anofinal, mesfinal):
 	return str(anofinal) + str(mesfinal)
 
@@ -28,7 +25,6 @@ def formatar_identificacao_unica(id_unica):
 	iu = id_unica['identificacaoUnica']
 	nome = id_unica['nome']
 	return iu, nome
-
 	
 def formatar_data_obito(data):
 	print(f"tipo (data): {type(data)}")		
