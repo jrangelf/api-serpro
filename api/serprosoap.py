@@ -139,9 +139,25 @@ class SerproSiape:
         if beneficiario_info and 'matricula' in beneficiario_info:
             return await loop.run_in_executor(cls.executor, cls._consultar_beneficiario_instituidores_sync, beneficiario_info['matricula'])
 
-        return ""
+        return ""   
+    
+    
+    @staticmethod
+    def _pesquisar_servidor_pelo_nome_sync(nome):
+        """Versão síncrona da pesquisa de servidor pelo nome"""
+        try:
+            nome = SerproUtils.remover_acentos(nome)            
+            str_saida = client.service.listarServidorNome(nome, TOKEN)                        
+            data = SerproUtils.ajustar_lista_nome_servidor(str_saida)            
+            return data 
+        except:
+            return ""
 
-
+    @classmethod
+    async def pesquisar_servidor_pelo_nome(cls, nome):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(cls.executor, cls._pesquisar_servidor_pelo_nome_sync, nome)    
+       
 
 # class SerproSiape:
 

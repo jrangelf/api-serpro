@@ -91,6 +91,14 @@ async def obter_ocorrencias_servidor(cpf: str, anofinal: int, mesfinal: int):
     return ficha
 
 
+@router.get("/pesquisarservidor/{nome}")
+async def pesquisar_servidor_pelo_nome(nome: str):
+    nome = await SerproSiape.pesquisar_servidor_pelo_nome(nome)
+    if nome:
+        return nome    
+    return ''
+
+
 @router.get("/pesquisarbeneficiario/{nome}")
 async def pesquisar_beneficiario_pelo_nome(nome: str):
     nome = await SerproSiape.pesquisar_beneficiario_pelo_nome(nome)
@@ -106,8 +114,8 @@ async def pesquisar_instituidores_pelo_cpf_beneficiario(cpf: str):
         return nome    
     return ''
 
-@router.get("/consultarbeneficioario/{cpf}")
-async def consultar_beneficioario_pelo_cpf(cpf: str):
+@router.get("/consultarbeneficiario/{cpf}")
+async def consultar_beneficiario_pelo_cpf(cpf: str):
     nome = await SerproSiape.consultar_beneficiario(cpf)
     if nome:
         return nome    
